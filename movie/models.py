@@ -21,7 +21,7 @@ class Genre(models.Model):
 
 
 class Content(TimeStempModel):
-    genre = models.ManyToManyField(Genre, related_name='contents')
+    genres = models.ManyToManyField(Genre, related_name='contents')
     director = models.CharField(max_length=50)
     title = models.CharField(max_length=200)
     description = models.TextField(null=True, blank=True,
