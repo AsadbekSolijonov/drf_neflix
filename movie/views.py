@@ -2,8 +2,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from movie.models import Genre, Content
-from movie.serializers import GenreSerializer, ContentSerializer
+from movie.models import Genre, Content, User
+from movie.serializers import GenreSerializer, ContentSerializer, UserProfileSerializer
+from django.db.models import Q
 
 
 # CRUD
@@ -11,6 +12,9 @@ from movie.serializers import GenreSerializer, ContentSerializer
 def genre_list_or_create(request, format=None):
     if request.method == 'GET':
         genres = Genre.objects.all()
+        search = request.query_params.get('search', None)
+        if search:
+            genres = genres.filter(name__icontains=search)
         serializer = GenreSerializer(genres, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -48,7 +52,26 @@ def genre_retrive_update_or_delete(request, pk, format=None):
 @api_view(['GET', 'POST'])
 def content_list_or_create(request, format=None):
     if request.method == 'GET':
-        contents = Content.objects.all()
+        genre = request.query_params.get('genre')
+        director = request.query_params.get('director')
+        title = request.query_params.get('title')
+        desc = request.query_params.get('desc')
+
+        filters = Q()
+        if genre:
+            filters &= Q(genres__name__icontains=genre)
+
+        if director:
+            filters &= Q(director__icontains=director)
+
+        if title:
+            filters &= Q(title__icontains=title)
+
+        if desc:
+            filters &= Q(description__icontains=desc)
+
+        contents = Content.objects.filter(filters).distinct()
+
         serializer = ContentSerializer(contents, many=True)
         return Response(serializer.data)
 
@@ -88,3 +111,17 @@ def content_retrive_update_or_delete(request, pk, format=None):
     elif request.method == 'DELETE':
         content.delete()
         return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET', 'POST'])
+def user_list_or_create(request, format=None):
+    if request.method == 'GET':
+        users = User.objects.all()
+        serializer = UserProfileSerializer(users, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    elif request.method == 'POST':
+        serializer = UserProfileSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
