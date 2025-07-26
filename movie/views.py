@@ -123,5 +123,26 @@ def user_list_or_create(request, format=None):
     elif request.method == 'POST':
         serializer = UserProfileSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
+        print(serializer.initial_data)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'PATCH', 'DELETE'])
+def user_retrive_update_or_delete(request, pk, format=None):
+    try:
+        user = User.objects.get(id=pk)
+    except User.DoesNotExist:
+        return Response({"message": "User object not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = UserProfileSerializer(user, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == 'PATCH':
+        serializer = UserProfileSerializer(user, data=request.data, context={'request': request}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    elif request.method == 'DELETE':
+        user.delete()
+        return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
