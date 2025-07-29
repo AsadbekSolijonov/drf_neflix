@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from movie.models import Genre, Content, User
-from movie.serializers import GenreSerializer, ContentSerializer, UserProfileSerializer
+from movie.serializers import GenreSerializer, ContentSerializer, UserProfileSerializer, UserSerializer
 from django.db.models import Q
 
 
@@ -144,5 +144,41 @@ def user_retrive_update_or_delete(request, pk, format=None):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
     elif request.method == 'DELETE':
+        user.delete()
+        return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET', 'POST'])
+def user_nested_list_or_create(request, format=None):
+    if request.method == 'GET':
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    elif request.method == 'POST':
+        serializer = UserSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'PATCH', "DELETE"])
+def user_nested_retrieve_update_or_delete(request, pk, format=None):
+    try:
+        user = User.objects.get(id=pk)
+    except User.DoesNotExist:
+        return Response({"message": "User object not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = UserSerializer(user, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    elif request.method == 'PATCH':
+        serializer = UserSerializer(user, data=request.data, context={"request": request}, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    elif request.method == "DELETE":
         user.delete()
         return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
