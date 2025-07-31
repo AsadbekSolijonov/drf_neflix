@@ -1,6 +1,8 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 
 from movie.models import Genre, Content, User
 from movie.serializers import GenreSerializer, ContentSerializer, UserProfileSerializer, UserSerializer
@@ -187,3 +189,23 @@ def user_nested_retrieve_update_or_delete(request, pk, format=None):
     elif request.method == "DELETE":
         user.delete()
         return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
+
+
+class GenreListView(APIView):  # Lis
+    def get(self, request, format=None):
+        genres = Genre.objects.all()
+        search = request.query_params.get('search', None)
+        if search:
+            genres = genres.filter(name__icontains=search)
+        serializer = GenreSerializer(genres, many=True)
+        content = Content.objects.filter(genres__in=genres).count()
+        return Response({
+            "total_genres": genres.count(),
+            "total_films": content,
+            "genres": serializer.data},
+            status=status.HTTP_200_OK)
+
+
+class GenreViewSet(ModelViewSet):  # CRUD
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer

@@ -51,3 +51,12 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.phone}"
+
+
+class WatechHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='watched_history')
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name='watech_history')
+    wateched_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.content.title}"
