@@ -16,7 +16,12 @@ def genre_list_or_create(request, format=None):
         if search:
             genres = genres.filter(name__icontains=search)
         serializer = GenreSerializer(genres, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        content = Content.objects.filter(genres__in=genres).count()
+        return Response({
+            "total_genres": genres.count(),
+            "total_films": content,
+            "genres": serializer.data},
+            status=status.HTTP_200_OK)
 
     elif request.method == 'POST':
         serializer = GenreSerializer(data=request.data)
@@ -170,11 +175,11 @@ def user_nested_retrieve_update_or_delete(request, pk, format=None):
         return Response({"message": "User object not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        serializer = UserSerializer(user, context={"request": request})
+        serializer = UserSerializer(user, context={"request": request, "user": user})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     elif request.method == 'PATCH':
-        serializer = UserSerializer(user, data=request.data, context={"request": request}, partial=True)
+        serializer = UserSerializer(user, data=request.data, context={"request": request, "user": user}, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)

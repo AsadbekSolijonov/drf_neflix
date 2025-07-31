@@ -1,10 +1,10 @@
-from django.contrib.auth.models import User
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from movie.models import Genre, Content, Profile
+from movie.models import Genre, Content, Profile, User
 from movie.validators import toshmat_validator, not_characters
+from django.contrib.auth.models import User
 
 
 class ContentSerializer(serializers.ModelSerializer):
@@ -14,7 +14,7 @@ class ContentSerializer(serializers.ModelSerializer):
 
 
 class GenreSerializer(serializers.ModelSerializer):
-    contents = ContentSerializer(many=True, read_only=True)
+    # contents = ContentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Genre
@@ -106,10 +106,18 @@ class UserProfileSerializer(serializers.Serializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(max_length=15)
 
     class Meta:
         model = Profile
-        exclude = ('user', )
+        exclude = ('user',)
+
+    def validate_phone(self, obj):
+        user = self.context['user']
+        profile_exsits = Profile.objects.filter(phone=obj).exclude(user=user).exists()
+        if profile_exsits:
+            raise serializers.ValidationError("This field must be unique.")
+        return obj
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -124,12 +132,7 @@ class UserSerializer(serializers.ModelSerializer):
         exclude = ('groups', 'user_permissions')
 
     def validate(self, attrs):
-        profile = attrs.get('profile')
         password = attrs.get('password')
-        if profile is not None:
-            phone = profile.get('phone')
-            if not phone:
-                raise serializers.ValidationError({"phone": "This field is required."})
         if password:
             password_confirm = attrs.get('password_confirm')
             if not password_confirm:
@@ -163,7 +166,7 @@ class UserSerializer(serializers.ModelSerializer):
         print(instance, validated_data)
         for field, value in validated_data.items():
             if 'password' == field:
-                instance.set_passwrod(value)
+                instance.set_password(value)
             elif hasattr(instance, field):
                 setattr(instance, field, value)
         instance.save()
