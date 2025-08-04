@@ -195,6 +195,7 @@ def user_nested_retrieve_update_or_delete(request, pk, format=None):
         return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
 
 
+<<<<<<< Updated upstream
 class GenreListView(APIView):  # Lis
     def get(self, request, format=None):
         genres = Genre.objects.all()
@@ -261,3 +262,7 @@ class UserStatisticsView(APIView):
             "watched_films": films['watched_films'],
             "watched_films_count_by_each_user": serializer.data
         })
+=======
+class WatechedHistoryView(APIView):
+    pass
+>>>>>>> Stashed changes
