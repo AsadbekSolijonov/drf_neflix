@@ -17,6 +17,9 @@ urlpatterns = [
     path('nt-users/', views.user_nested_list_or_create),
     path('nt-users/<int:pk>/', views.user_nested_retrieve_update_or_delete),
     # re_path('cbv/', views.GenreListView.as_view())
+    path('history/', views.WatchedHistoryView.as_view()),
+    path('history/<int:pk>/delete/', views.WatchedHistoryDestroyView.as_view()),
+    path("user-statistics/", views.UserStatisticsView.as_view()),
 ]
 
 urlpatterns += router.urls
