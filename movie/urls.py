@@ -1,5 +1,11 @@
-from django.urls import path
+from django.urls import path, include, re_path
 from movie import views
+from rest_framework.routers import DefaultRouter
+
+from movie.views import GenreViewSet
+
+router = DefaultRouter()
+router.register('cbv-user_viewset', GenreViewSet)
 
 urlpatterns = [
     path('', views.genre_list_or_create),
@@ -9,6 +15,11 @@ urlpatterns = [
     path('users/', views.user_list_or_create),
     path('users/<int:pk>/', views.user_retrive_update_or_delete),
     path('nt-users/', views.user_nested_list_or_create),
-    path('nt-users/<int:pk>/', views.user_nested_retrieve_update_or_delete)
-
+    path('nt-users/<int:pk>/', views.user_nested_retrieve_update_or_delete),
+    # re_path('cbv/', views.GenreListView.as_view())
+    path('history/', views.WatchedHistoryView.as_view()),
+    path('history/<int:pk>/delete/', views.WatchedHistoryDestroyView.as_view()),
+    path("user-statistics/", views.UserStatisticsView.as_view()),
 ]
+
+urlpatterns += router.urls
