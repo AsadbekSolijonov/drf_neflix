@@ -199,3 +199,8 @@ class UserStatisticsSerializer(serializers.Serializer):
     # id = serializers.IntegerField(read_only=True)
     username = serializers.CharField(read_only=True)
     watched_films_count = serializers.IntegerField(read_only=True)
+
+
+class ContentStatisticsSerializer(serializers.Serializer):
+    title = serializers.CharField(read_only=True)
+    film_watched_count = serializers.CharField(read_only=True)

@@ -1,15 +1,22 @@
 from rest_framework import status
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import (IsAuthenticated,
+                                        AllowAny,
+                                        IsAdminUser,
+                                        IsAuthenticatedOrReadOnly,
+                                        DjangoModelPermissions,
+                                        DjangoModelPermissionsOrAnonReadOnly,
+                                        DjangoObjectPermissions)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from movie.models import Genre, Content, User, WatchedHistory
+from movie.permissions import IsSuperUser, IsOwner
 from movie.serializers import GenreSerializer, ContentSerializer, UserProfileSerializer, UserSerializer, \
-    WatchedHistorySerializer, UserStatisticsSerializer
+    WatchedHistorySerializer, UserStatisticsSerializer, ContentStatisticsSerializer
 from django.db.models import Q, Count, Sum
 
 
@@ -127,7 +134,7 @@ def content_retrive_update_or_delete(request, pk, format=None):
 @api_view(['GET', 'POST'])
 def user_list_or_create(request, format=None):
     if request.method == 'GET':
-        users = User.objects.all()
+        users = User.objects.select_related('profile')
         serializer = UserProfileSerializer(users, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -142,7 +149,7 @@ def user_list_or_create(request, format=None):
 @api_view(['GET', 'PATCH', 'DELETE'])
 def user_retrive_update_or_delete(request, pk, format=None):
     try:
-        user = User.objects.get(id=pk)
+        user = User.objects.select_related('profile').get(id=pk)
     except User.DoesNotExist:
         return Response({"message": "User object not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -160,9 +167,10 @@ def user_retrive_update_or_delete(request, pk, format=None):
 
 
 @api_view(['GET', 'POST'])
+@permission_classes([IsOwner])
 def user_nested_list_or_create(request, format=None):
     if request.method == 'GET':
-        users = User.objects.all()
+        users = User.objects.select_related('profile')
         serializer = UserSerializer(users, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -174,9 +182,10 @@ def user_nested_list_or_create(request, format=None):
 
 
 @api_view(['GET', 'PATCH', "DELETE"])
+@permission_classes([IsOwner])
 def user_nested_retrieve_update_or_delete(request, pk, format=None):
     try:
-        user = User.objects.get(id=pk)
+        user = User.objects.select_related('profile').get(id=pk)
     except User.DoesNotExist:
         return Response({"message": "User object not found"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -213,11 +222,12 @@ class GenreListView(APIView):  # Lis
 class GenreViewSet(ModelViewSet):  # CRUD
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    permission_classes = [IsSuperUser]
 
 
 class WatchedHistoryView(APIView):
     def get(self, request):
-        histories = WatchedHistory.objects.filter(is_delete=False)
+        histories = WatchedHistory.objects.select_related('user', 'content').filter(is_delete=False)
         serializer = WatchedHistorySerializer(histories, many=True)
         films = WatchedHistory.objects.aggregate(
             watched_films_count=Count('id'),
@@ -250,14 +260,17 @@ class WatchedHistoryDestroyView(APIView):
 
 class UserStatisticsView(APIView):
     # authentication_classes = [BasicAuthentication, SessionAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]  # Request level permission, Object level Permission
 
     def get(self, requst):
         films = User.objects.annotate(watched_films_count=Count('watched_history')).order_by('-watched_films_count')
+        contents = Content.objects.annotate(film_watched_count=Count('watched_history')).order_by('-film_watched_count')
 
         serializer = UserStatisticsSerializer(films, many=True)
+        contents = ContentStatisticsSerializer(contents, many=True)
         films = films.aggregate(watched_films=Sum('watched_films_count'))
         return Response({
             "watched_films": films['watched_films'],
+            "contents": contents.data,
             "watched_films_count_by_each_user": serializer.data
         })
