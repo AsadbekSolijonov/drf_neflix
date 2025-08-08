@@ -2,22 +2,15 @@ from rest_framework import status
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import (IsAuthenticated,
-                                        AllowAny,
-                                        IsAdminUser,
-                                        IsAuthenticatedOrReadOnly,
-                                        DjangoModelPermissions,
-                                        DjangoModelPermissionsOrAnonReadOnly,
-                                        DjangoObjectPermissions)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
-from movie.models import Genre, Content, User, WatchedHistory
-from movie.permissions import IsSuperUser, IsOwner
-from movie.serializers import GenreSerializer, ContentSerializer, UserProfileSerializer, UserSerializer, \
-    WatchedHistorySerializer, UserStatisticsSerializer, ContentStatisticsSerializer
+from movie.models.movie import WatchedHistory, Genre, Content
+from movie.permissions import IsSuperUser
 from django.db.models import Q, Count, Sum
+
+from movie.serializers.movie import GenreSerializer, ContentSerializer, WatchedHistorySerializer
 
 
 # CRUD
@@ -131,78 +124,7 @@ def content_retrive_update_or_delete(request, pk, format=None):
         return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(['GET', 'POST'])
-def user_list_or_create(request, format=None):
-    if request.method == 'GET':
-        users = User.objects.select_related('profile')
-        serializer = UserProfileSerializer(users, many=True, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    elif request.method == 'POST':
-        serializer = UserProfileSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        print(serializer.initial_data)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-@api_view(['GET', 'PATCH', 'DELETE'])
-def user_retrive_update_or_delete(request, pk, format=None):
-    try:
-        user = User.objects.select_related('profile').get(id=pk)
-    except User.DoesNotExist:
-        return Response({"message": "User object not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = UserProfileSerializer(user, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    elif request.method == 'PATCH':
-        serializer = UserProfileSerializer(user, data=request.data, context={'request': request}, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    elif request.method == 'DELETE':
-        user.delete()
-        return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsOwner])
-def user_nested_list_or_create(request, format=None):
-    if request.method == 'GET':
-        users = User.objects.select_related('profile')
-        serializer = UserSerializer(users, many=True, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    elif request.method == 'POST':
-        serializer = UserSerializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-@api_view(['GET', 'PATCH', "DELETE"])
-@permission_classes([IsOwner])
-def user_nested_retrieve_update_or_delete(request, pk, format=None):
-    try:
-        user = User.objects.select_related('profile').get(id=pk)
-    except User.DoesNotExist:
-        return Response({"message": "User object not found"}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = UserSerializer(user, context={"request": request, "user": user})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    elif request.method == 'PATCH':
-        serializer = UserSerializer(user, data=request.data, context={"request": request, "user": user}, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    elif request.method == "DELETE":
-        user.delete()
-        return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
-
+# APIVIew, Generics(), Concrate Generics(), ViewSet, ModelViewSet
 
 class GenreListView(APIView):  # Lis
     def get(self, request, format=None):
@@ -256,21 +178,3 @@ class WatchedHistoryDestroyView(APIView):
         obj.is_delete = True
         obj.save()
         return Response({"message": "Object is deleted!"}, status=status.HTTP_204_NO_CONTENT)
-
-
-class UserStatisticsView(APIView):
-    # authentication_classes = [BasicAuthentication, SessionAuthentication]
-    permission_classes = [IsAdminUser]  # Request level permission, Object level Permission
-
-    def get(self, requst):
-        films = User.objects.annotate(watched_films_count=Count('watched_history')).order_by('-watched_films_count')
-        contents = Content.objects.annotate(film_watched_count=Count('watched_history')).order_by('-film_watched_count')
-
-        serializer = UserStatisticsSerializer(films, many=True)
-        contents = ContentStatisticsSerializer(contents, many=True)
-        films = films.aggregate(watched_films=Sum('watched_films_count'))
-        return Response({
-            "watched_films": films['watched_films'],
-            "contents": contents.data,
-            "watched_films_count_by_each_user": serializer.data
-        })

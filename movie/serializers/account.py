@@ -2,23 +2,11 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from movie.models import Genre, Content, Profile, User, WatchedHistory
 from movie.validators import toshmat_validator, not_characters
 from django.contrib.auth.models import User
-
-
-class ContentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Content
-        fields = '__all__'
-
-
-class GenreSerializer(serializers.ModelSerializer):
-    # contents = ContentSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Genre
-        fields = '__all__'
+from movie.models.account import Profile
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
 
 
 class UserProfileSerializer(serializers.Serializer):
@@ -113,7 +101,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         exclude = ('user',)
 
     def validate_phone(self, obj):
-        user = self.context['user']
+        user = self.context['request'].user
         profile_exsits = Profile.objects.filter(phone=obj).exclude(user=user).exists()
         if profile_exsits:
             raise serializers.ValidationError("This field must be unique.")
@@ -174,33 +162,23 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class WatchedHistorySerializer(serializers.ModelSerializer):
-    username = serializers.SerializerMethodField()
-    content_name = serializers.StringRelatedField(source='content')
-
-    class Meta:
-        model = WatchedHistory
-        fields = ('id', 'watched_at', 'user', 'content', 'username', 'content_name', 'is_delete')
-        read_only_fields = ('id', 'watched_at')
-        extra_kwargs = {
-            "user": {"write_only": True},
-            "content": {"write_only": True},
-        }
-
-    def get_username(self, obj):
-        full_name = obj.user.username
-        if obj.user.first_name and obj.user.last_name:
-            full_name = obj.user.get_full_name()
-
-        return full_name
-
-
 class UserStatisticsSerializer(serializers.Serializer):
     # id = serializers.IntegerField(read_only=True)
     username = serializers.CharField(read_only=True)
     watched_films_count = serializers.IntegerField(read_only=True)
 
 
-class ContentStatisticsSerializer(serializers.Serializer):
-    title = serializers.CharField(read_only=True)
-    film_watched_count = serializers.CharField(read_only=True)
+class LoginUserSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    token = serializers.CharField(read_only=True)
+
+    def validate(self, attrs):
+        username = attrs['username']
+        password = attrs['password']
+        user = authenticate(username=username, password=password)
+        if user and user.is_active:
+            token, created = Token.objects.get_or_create(user=user)
+            attrs['token'] = str(token.key)
+            return attrs
+        raise serializers.ValidationError({"message": "Invalid login/password!"})
