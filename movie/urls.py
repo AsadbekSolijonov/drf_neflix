@@ -1,6 +1,11 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+
 from movie.views.account import user_list_or_create, user_retrive_update_or_delete, user_nested_list_or_create, \
     user_nested_retrieve_update_or_delete, UserStatisticsView, RegisterUserProfile, LoginUserAPIView, \
     AccountUserListAPIView, LogoutUserAPIView, ResetPasswordRequestAPIView, ResetPasswordConfirmAPIView
@@ -31,6 +36,10 @@ urlpatterns = [
     path('logout/', LogoutUserAPIView.as_view(), name='logout'),
     path('reset-password/', ResetPasswordRequestAPIView.as_view(), name='reset_password'),
     path('reset-password-confirm/', ResetPasswordConfirmAPIView.as_view(), name='reset_password_confirm'),
+
+    # JWT
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 urlpatterns += router.urls

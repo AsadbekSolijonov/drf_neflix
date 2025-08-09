@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from movie.models.movie import WatchedHistory, Genre, Content
-from movie.permissions import IsSuperUser
+from movie.permissions import IsSuperUser, IsAuthenticated
 from django.db.models import Q, Count, Sum
 
 from movie.serializers.movie import GenreSerializer, ContentSerializer, WatchedHistorySerializer
@@ -15,6 +15,7 @@ from movie.serializers.movie import GenreSerializer, ContentSerializer, WatchedH
 
 # CRUD
 @api_view(['GET', 'POST'])
+# @permission_classes([IsAuthenticated])
 def genre_list_or_create(request, format=None):
     if request.method == 'GET':
         genres = Genre.objects.all()
