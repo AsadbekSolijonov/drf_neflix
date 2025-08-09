@@ -154,7 +154,6 @@ class ResetPasswordRequestAPIView(APIView):
 
 
 class ResetPasswordConfirmAPIView(APIView):
-    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = ResetPasswordConfirmSerializer(data=request.data)
