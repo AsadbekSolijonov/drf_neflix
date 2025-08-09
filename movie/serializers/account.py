@@ -4,6 +4,7 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+import root.settings
 from movie.validators import toshmat_validator, not_characters
 from django.contrib.auth.models import User
 from movie.models.account import Profile
@@ -205,7 +206,7 @@ class ResetPasswordRequestSerializer(serializers.Serializer):
         send_mail(
             'Password Reset Request',
             f"Rest Code: {code}",
-            "iamsolijonovasadbek@gmail.com",
+            root.settings.EMAIL_HOST_USER,
             [email],
             fail_silently=False,
         )
