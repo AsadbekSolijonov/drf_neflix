@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from movie.views.account import user_list_or_create, user_retrive_update_or_delete, user_nested_list_or_create, \
     user_nested_retrieve_update_or_delete, UserStatisticsView, RegisterUserProfile, LoginUserAPIView, \
-    AccountUserListAPIView
+    AccountUserListAPIView, LogoutUserAPIView, ResetPasswordRequestAPIView, ResetPasswordConfirmAPIView
 from movie.views.movie import GenreViewSet, genre_list_or_create, genre_retrive_update_or_delete, \
     content_list_or_create, content_retrive_update_or_delete, WatchedHistoryView, WatchedHistoryDestroyView
 
@@ -27,7 +27,10 @@ urlpatterns = [
     # APIView Resgister
     path('register/', RegisterUserProfile.as_view(), name='register'),
     path('login/', LoginUserAPIView.as_view(), name='login'),
-    path('list-apiview-users/', AccountUserListAPIView.as_view(), name='list_api_view_users')
+    path('list-apiview-users/', AccountUserListAPIView.as_view(), name='list_api_view_users'),
+    path('logout/', LogoutUserAPIView.as_view(), name='logout'),
+    path('reset-password/', ResetPasswordRequestAPIView.as_view(), name='reset_password'),
+    path('reset-password-confirm/', ResetPasswordConfirmAPIView.as_view(), name='reset_password_confirm'),
 ]
 
 urlpatterns += router.urls

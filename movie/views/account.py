@@ -1,3 +1,4 @@
+from django.contrib.auth import logout
 from django.db.models import Count, Sum
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -11,7 +12,7 @@ from movie.models.account import User
 from movie.models.movie import Content
 from movie.permissions import TimeCheckerPermission, IsAuthenticatedOrReadOnly, IsOwnerOrSuperuser, IsAuthenticated
 from movie.serializers.account import UserProfileSerializer, UserSerializer, UserStatisticsSerializer, \
-    LoginUserSerializer
+    LoginUserSerializer, ResetPasswordRequestSerializer, ResetPasswordConfirmSerializer
 from movie.serializers.movie import ContentStatisticsSerializer
 
 
@@ -133,6 +134,33 @@ class LoginUserAPIView(APIView):
         serializer = LoginUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
+
+
+class LogoutUserAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request.user.auth_token.delete()
+        logout(request)
+        return Response({"message": "User logged out!"})
+
+
+class ResetPasswordRequestAPIView(APIView):
+    def post(self, request):
+        serializer = ResetPasswordRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Emailga maxsus kod yuborildi!"})
+
+
+class ResetPasswordConfirmAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ResetPasswordConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"message": "Password muvaffaqiyatli o'zgardi!"})
 
 
 class AccountUserListAPIView(ListAPIView):
