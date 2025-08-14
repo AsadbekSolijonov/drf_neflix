@@ -1,5 +1,7 @@
 from django.contrib.auth import logout
 from django.db.models import Count, Sum
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import api_view, permission_classes
@@ -7,6 +9,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from movie.models.account import User
 from movie.models.movie import Content
@@ -130,6 +133,24 @@ class RegisterUserProfile(APIView):
 
 
 class LoginUserAPIView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Login user and get token",
+        operation_description="Authenticate user with username and password, returns JWT tokens.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'password'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='User username'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_PASSWORD,
+                                           description='User password'),
+            },
+            example={
+                "username": "john_doe",
+                "password": "strongpassword123"
+            }
+        ),
+        responses={200: "Tokens or user data", 400: "Validation Error"}
+    )
     def post(self, request):
         serializer = LoginUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -165,4 +186,5 @@ class ResetPasswordConfirmAPIView(APIView):
 class AccountUserListAPIView(ListAPIView):
     queryset = User.objects.all()
     serializer_class = UserProfileSerializer
+    authentication_classes = [JWTAuthentication, ]
     permission_classes = [IsAuthenticated, ]

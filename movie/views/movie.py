@@ -1,6 +1,10 @@
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,16 +13,40 @@ from rest_framework.viewsets import ModelViewSet
 from movie.models.movie import WatchedHistory, Genre, Content
 from movie.permissions import IsSuperUser, IsAuthenticated
 from django.db.models import Q, Count, Sum
-
+from rest_framework.throttling import UserRateThrottle
 from movie.serializers.movie import GenreSerializer, ContentSerializer, WatchedHistorySerializer
+from movie.throttles import BurstRateThrottle
 
 
 # CRUD
+@swagger_auto_schema(
+    method='post',
+    operation_summary="Genre ni yaratish",
+    request_body=GenreSerializer,
+    responses={201: GenreSerializer, 400: 'Validation Error'}
+)
+@swagger_auto_schema(
+    method='get',
+    operation_summary="Genre larni olish",
+    manual_parameters=[
+        openapi.Parameter(
+            'search', openapi.IN_QUERY,
+            description="Search genres by name",
+            type=openapi.TYPE_STRING
+        )
+    ],
+    operation_description="Ganrlarni olish",
+    responses={200: GenreSerializer(many=True)}
+)
 @api_view(['GET', 'POST'])
-# @permission_classes([IsAuthenticated])
+@cache_page(60 * 15)
+@vary_on_cookie
+@permission_classes([IsAuthenticated])
+@throttle_classes([BurstRateThrottle])
 def genre_list_or_create(request, format=None):
     if request.method == 'GET':
         genres = Genre.objects.all()
+        print('Cache1')
         search = request.query_params.get('search', None)
         if search:
             genres = genres.filter(name__icontains=search)

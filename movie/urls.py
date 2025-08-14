@@ -16,7 +16,7 @@ router = DefaultRouter()
 router.register('cbv-user_viewset', GenreViewSet)
 
 urlpatterns = [
-    path('', genre_list_or_create),
+    path('', genre_list_or_create, name='genre_list_or_create'),
     path('<int:pk>/', genre_retrive_update_or_delete),
     path('contents/', content_list_or_create),
     path('contents/<int:pk>/', content_retrive_update_or_delete),
