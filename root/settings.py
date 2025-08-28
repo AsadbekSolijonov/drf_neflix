@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/2.0/ref/settings/
 
 import os
 from datetime import timedelta
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,12 +23,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ')qmikn(7gxm2l@0wm%fnnby*fdppxx%y0s4oq0r#=8ryzbwa8u'
-
+SECRET_KEY = os.getenv('SECRET_KEY')
+print(SECRET_KEY)
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG")
+print(DEBUG)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(',')
+print(ALLOWED_HOSTS)
 
 # Application definition
 
@@ -166,12 +170,18 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'iamsolijonovasadbek@gmail.com'
-EMAIL_HOST_PASSWORD = 'tyztkclgexmxpmfw'
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = os.getenv("EMAIL_PORT")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+print(EMAIL_BACKEND)
+print(EMAIL_HOST)
+print(EMAIL_PORT)
+print(EMAIL_USE_TLS)
+print(EMAIL_HOST_USER)
+print(EMAIL_HOST_PASSWORD)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=365),
@@ -214,13 +224,10 @@ SIMPLE_JWT = {
 }
 
 # cors headers
-CORS_ALLOWED_ORIGINS = [
-    "https://example.com",
-    "https://sub.example.com",
-    "http://localhost:5050",
-    "http://localhost:5500",
-    "http://127.0.0.1:5500"
-]
+CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS").split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv("CSRF_TRUSTED_ORIGINS").split(',')
+print(CORS_ALLOWED_ORIGINS)
+print(CSRF_TRUSTED_ORIGINS)
 
 CORS_ALLOW_METHODS = (
     "DELETE",
@@ -230,10 +237,6 @@ CORS_ALLOW_METHODS = (
     "POST",
     "PUT",
 )
-CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-]
 
 CORS_ALLOW_HEADERS = (
     "accept",
