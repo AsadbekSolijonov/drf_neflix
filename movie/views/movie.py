@@ -15,7 +15,6 @@ from movie.permissions import IsSuperUser, IsAuthenticated
 from django.db.models import Q, Count, Sum
 from rest_framework.throttling import UserRateThrottle
 from movie.serializers.movie import GenreSerializer, ContentSerializer, WatchedHistorySerializer
-from movie.throttles import BurstRateThrottle
 
 
 # CRUD
@@ -42,7 +41,6 @@ from movie.throttles import BurstRateThrottle
 @cache_page(60 * 15)
 @vary_on_cookie
 @permission_classes([IsAuthenticated])
-@throttle_classes([BurstRateThrottle])
 def genre_list_or_create(request, format=None):
     if request.method == 'GET':
         genres = Genre.objects.all()
