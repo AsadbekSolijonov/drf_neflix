@@ -1,24 +1,16 @@
+import random
+
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
-from movie.models import Genre, Content, Profile, User, WatchedHistory
+import root.settings
 from movie.validators import toshmat_validator, not_characters
 from django.contrib.auth.models import User
-
-
-class ContentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Content
-        fields = '__all__'
-
-
-class GenreSerializer(serializers.ModelSerializer):
-    # contents = ContentSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Genre
-        fields = '__all__'
+from movie.models.account import Profile
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+from django.core.mail import send_mail
 
 
 class UserProfileSerializer(serializers.Serializer):
@@ -113,7 +105,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         exclude = ('user',)
 
     def validate_phone(self, obj):
-        user = self.context['user']
+        user = self.context['request'].user
         profile_exsits = Profile.objects.filter(phone=obj).exclude(user=user).exists()
         if profile_exsits:
             raise serializers.ValidationError("This field must be unique.")
@@ -174,28 +166,75 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
 
 
-class WatchedHistorySerializer(serializers.ModelSerializer):
-    username = serializers.SerializerMethodField()
-    content_name = serializers.StringRelatedField(source='content')
-
-    class Meta:
-        model = WatchedHistory
-        fields = ('id', 'watched_at', 'user', 'content', 'username', 'content_name', 'is_delete')
-        read_only_fields = ('id', 'watched_at')
-        extra_kwargs = {
-            "user": {"write_only": True},
-            "content": {"write_only": True},
-        }
-
-    def get_username(self, obj):
-        full_name = obj.user.username
-        if obj.user.first_name and obj.user.last_name:
-            full_name = obj.user.get_full_name()
-
-        return full_name
-
-
 class UserStatisticsSerializer(serializers.Serializer):
     # id = serializers.IntegerField(read_only=True)
     username = serializers.CharField(read_only=True)
     watched_films_count = serializers.IntegerField(read_only=True)
+
+
+class LoginUserSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    token = serializers.CharField(read_only=True)
+
+    def validate(self, attrs):
+        username = attrs['username']
+        password = attrs['password']
+        user = authenticate(username=username, password=password)
+        if user and user.is_active:
+            token, created = Token.objects.get_or_create(user=user)
+            attrs['token'] = str(token.key)
+            return attrs
+        raise serializers.ValidationError({"message": "Invalid login/password!"})
+
+
+class ResetPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(write_only=True)
+
+    def validate_email(self, value):
+        email = User.objects.filter(email=value).exists()
+        if not email:
+            raise serializers.ValidationError({"message": "Email invalid!"})
+        return value
+
+    def save(self, **kwargs):
+        email = self.validated_data['email']
+        user = User.objects.get(email=email)
+        code = random.randint(100_000, 999_999)
+        user.profile.reset_code = code
+        user.profile.save()
+        send_mail(
+            'Password Reset Request',
+            f"Rest Code: {code}",
+            root.settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+        )
+        return self.instance
+
+
+class ResetPasswordConfirmSerializer(serializers.Serializer):
+    email = serializers.EmailField(write_only=True)
+    reset_code = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs['email']
+        reset_code = attrs['reset_code']
+        user = User.objects.get(email=email)
+        if not user:
+            raise serializers.ValidationError({"message": "Email invalid!"})
+        if user.profile.reset_code != reset_code:
+            raise serializers.ValidationError({"message": "Reset code invalid"})
+        return attrs
+
+    def save(self, **kwargs):
+        email = self.validated_data.get('email')
+        new_password = self.validated_data.get('new_password')
+        user = User.objects.get(email=email)
+        user.set_password(new_password)
+        user.save()
+
+        user.profile.reset_code = ''
+        user.profile.save()
+        return user
