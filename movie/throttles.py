@@ -1,16 +1,16 @@
 from rest_framework.throttling import UserRateThrottle, SimpleRateThrottle
 
 
-class BurstRateThrottle(UserRateThrottle):
-    scope = 'burst'
+# class BurstRateThrottle(UserRateThrottle):
+    # scope = 'burst'
 
 
-class SustainedRateThrottle(UserRateThrottle):
-    scope = 'sustained'
+# class SustainedRateThrottle(UserRateThrottle):
+    # scope = 'sustained'
 
 
-class PermiumRateThrottle(SimpleRateThrottle):
-    scope = 'premium'
+# class PermiumRateThrottle(SimpleRateThrottle):
+    # scope = 'premium'
 
     # def get_cache_key(self, request, view):
     #     if request.user.is_authenticated and request.user.status == 'premium':
