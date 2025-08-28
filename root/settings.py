@@ -64,17 +64,17 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle',
-        'movie.throttles.BurstRateThrottle',
-        'movie.throttles.SustainedRateThrottle',
-        'movie.throttles.PermiumRateThrottle',
+        # 'movie.throttles.BurstRateThrottle',
+        # 'movie.throttles.SustainedRateThrottle',
+        # 'movie.throttles.PermiumRateThrottle',
 
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
         'user': '1000/day',
-        'burst': '5/min',
-        'sustained': '1000/day',
-        'premium': '10000/day'
+        # 'burst': '5/min',
+        # 'sustained': '1000/day',
+        # 'premium': '10000/day'
     }
 
 }
